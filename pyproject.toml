@@ -10,4 +10,4 @@ description = "Python SDK for licensemanager.at"
 
 [build-system]
 requires = ["setuptools"]
-build-backend = "setup_tools.build_meta"
+build-backend = "setuptools.build_meta"
