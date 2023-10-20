@@ -1,0 +1,13 @@
+[project]
+name = "woocommerce_license_sdk"
+version = "0.0.1"
+dependencies = [
+    "requests",
+    
+]
+description = "Python SDK for licensemanager.at"
+
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setup_tools.build_meta"
