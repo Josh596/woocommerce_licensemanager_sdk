@@ -5,26 +5,22 @@ from typing import Any, Callable, Optional, Type
 from urllib.parse import urljoin
 
 import requests
-from exceptions import (
+from typing_extensions import Self
+
+from .exceptions import (
     ActivationLimitReachedException,
     APIException,
     ExpiredLicenseKeyException,
     InvalidLicenseKeyException,
 )
-from typing_extensions import Self
 
 
 class HttpMethod(Enum):
     GET = "GET"
     POST = "POST"
-    PUT = "PUT"
 
     def request(self) -> Callable[..., requests.Response]:
-        method_map = {
-            HttpMethod.GET: requests.get,
-            HttpMethod.POST: requests.post,
-            HttpMethod.PUT: requests.put,
-        }
+        method_map = {HttpMethod.GET: requests.get, HttpMethod.POST: requests.post}
 
         return method_map[self]
         ...
@@ -61,7 +57,7 @@ class License:
     expires_at: datetime.datetime
     times_activated: int
     times_activated_max: int
-    created_at: datetime.date
+    created_at: datetime.datetime
 
     def is_expired(self):
         return datetime.datetime.utcnow() > self.expires_at
@@ -108,7 +104,9 @@ class LicenseManager:
         )
         times_activated = data["timesActivated"]
         times_activated_max = data["timesActivatedMax"]
-        created_at = data["createdAt"]
+        created_at = datetime.datetime.fromisoformat(data["createdAt"]).replace(
+            tzinfo=datetime.timezone.utc
+        )
 
         return License(
             license_key=license_key,
@@ -121,10 +119,10 @@ class LicenseManager:
     def _build_license_from_response(self, response):
         return self._build_license_from_dict(response["data"])
 
-    def _make_license_request(self, sub_route: str, method=HttpMethod.GET, **kwargs):
+    def _make_license_request(self, sub_route: str):
         endpoint = f"licenses/{sub_route}"
         try:
-            response = self._make_request(method, endpoint=endpoint, **kwargs)
+            response = self._make_request(HttpMethod.GET, endpoint=endpoint)
         except requests.HTTPError as err:
             err_json = err.response.json()
             code = err_json["code"]
@@ -156,11 +154,21 @@ class LicenseManager:
 
         return license
 
-    def license_update(self, license_key: str, data: dict):
-        sub_route = f"{license_key}"
-        license = self._make_license_request(
-            sub_route, method=HttpMethod.PUT, data=data
-        )
 
-        return license
-        ...
+if __name__ == "__main__":
+    consumer_key = "ck_f1e671bfe697b3d6e2b67074dded8b0345592b20"
+    consumer_secret = "cs_86d125b6a878b2cb50fc5866598ca8d08758edc1"
+
+    site_url = "http://design-gecko.com"
+    test_key = "IMG1YR2DM0-44YG-PFCP-37RL-SYS8"
+    expired_key = "IMG1MI6T2-F6KB-A5TN-U0AP-VD"
+
+    test_key = expired_key
+    license_manager = LicenseManager(consumer_key, consumer_secret, site_url)
+
+    license_data = license_manager.license_deactivate(license_key=test_key)
+    license_data = license_manager.license_activate(license_key=test_key)
+
+
+# 'lmfwc_rest_license_expired'
+# 'lmfwc_rest_data_error'
